@@ -63,25 +63,8 @@ public class Main extends Application{
         padView.setFitWidth(IMAGE_VIEW_WIDTH + 100);
         padView.setFitHeight(IMAGE_VIEW_WIDTH + 100);
 
-
-
-
-        // get pixel value at given position
-        PixelReader pixelReader = originalImage.getPixelReader();
-        int argbValue = pixelReader.getArgb(3000, 100);
-        int alpha = (argbValue >> 24) & 0xFF;
-        int red = (argbValue >> 16) & 0xFF;
-        int green = (argbValue >> 8) & 0xFF;
-        int blue = argbValue & 0xFF;
-        System.out.println("ARGB at (100, 100): " + alpha + ", " + red + ", " + green + ", " + blue);
-
-        // create new image with either black padding or extend colors
-        //      make method for padding
-
         // create matrix/list object for the filter
         //      maybe constants to choose from
-
-        // iterate over every pixel
 
         // setup grid object to put image onto
         GridPane root = new GridPane();
@@ -94,6 +77,14 @@ public class Main extends Application{
         stage.show();
     }
 
+    /**
+     * This method is responsible for adding a layer of padding to the outside
+     * of the image, 1 pixel thick. A 1920x1080 image will come out as a
+     * 1921x1081. The color of the padding will match the nearest pixel as to
+     * extend the image
+     * @param image Image object to pad
+     * @return Image passed with padding
+     */
     public Image addPadding(Image image) {
 
         // create blank Writable image and get instance to writer
@@ -145,10 +136,30 @@ public class Main extends Application{
                             newColor = reader.getColor(x - 1, y);
                             writer.setColor(x, y, newColor);
                             break;
-                    }
+                        default:
 
-                    // if just general border, get neighbor color
-                    //TODO add border padding, then test by grabbing pixel values
+                            // if its not a corner its a border
+                            if (x == 0) {
+                                newColor = reader.getColor(x, y - 1);
+                                writer.setColor(x, y, newColor);
+                            }
+                            else if (x == IMAGE_WIDTH) {
+                                newColor = reader.getColor(x - 2, y - 1);
+                                writer.setColor(x, y, newColor);
+                            }
+                            else if (y == 0) {
+                                newColor = reader.getColor(x - 1, y);
+                                writer.setColor(x, y, newColor);
+                            }
+                            else {
+                                newColor = reader.getColor(x - 1, y - 2);
+                                writer.setColor(x, y, newColor);
+                            }
+                    }
+                // otherwise just copy the corresponding pixel
+                } else {
+                    Color newColor = reader.getColor(x - 1, y - 1);
+                    writer.setColor(x, y, newColor);
                 }
             }
         }
