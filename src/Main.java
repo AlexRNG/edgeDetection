@@ -103,50 +103,52 @@ public class Main extends Application{
         // create reader for passed image
         PixelReader reader = image.getPixelReader();
 
-        // create color refs
-        Color color = Color.color(1, 1, 1, 1);
-        Color color2 = Color.color(0, 0, 0, 1);
-
         // iterate over all pixels
         for (int y = 0; y < IMAGE_HEIGHT + 1; ++y) {
             for (int x = 0; x < IMAGE_WIDTH + 1; ++x) {
 
-
-
+                // booleans for determining if pixel is on border
                 boolean isInXBorder = x == 0 || x == IMAGE_WIDTH;
                 boolean isInYBorder = y == 0 || y == IMAGE_HEIGHT;
 
-                if (isInYBorder) {
-                    if (x == 0) {
-                        Color newColor = reader.getColor(x , y);
-                        writer.setColor(x, y, newColor);
-                    } else {
+                // booleans determining if pixel is in one of the corners
+                boolean is00Corner = x == 0 && y == 0;
+                boolean is01Corner = x == 0 && y == IMAGE_HEIGHT;
+                boolean is10Corner = x == IMAGE_WIDTH && y == IMAGE_HEIGHT;
+                boolean is11Corner = x ==IMAGE_WIDTH && y == 0;
 
+                // casting these booleans to string in sequence
+                String cornerResult = is00Corner + "-" + is01Corner
+                        + "-" + is10Corner + "-" + is11Corner;
+
+                // check if pixel is in the border
+                if (isInXBorder || isInYBorder) {
+
+                    /* check if this pixel in a corner, if so which one
+                     * and color with the same color as it's diagonal
+                     */
+                    Color newColor = null;
+                    switch (cornerResult) {
+                        case "true-false-false-false":
+                            newColor = reader.getColor(x, y);
+                            writer.setColor(x, y, newColor);
+                            break;
+                        case "false-true-false-false":
+                            newColor = reader.getColor(x, y - 1);
+                            writer.setColor(x, y, newColor);
+                            break;
+                        case "false-false-true-false":
+                            newColor = reader.getColor(x - 1, y - 1);
+                            writer.setColor(x, y, newColor);
+                            break;
+                        case "false-false-false-true":
+                            newColor = reader.getColor(x - 1, y);
+                            writer.setColor(x, y, newColor);
+                            break;
                     }
-                }
 
-
-                // depending on which border it is on get padding to match neighbor
-                if (x == 0) {
-                    Color newColor = reader.getColor(x, y);
-                    writer.setColor(x, y, newColor);
-                }
-                else if (x == IMAGE_WIDTH && y == 0) {
-                    Color newColor = reader.getColor(x - 2, y - 1);
-                    writer.setColor(x, y, newColor);
-                }
-                else if (y == 0 && x != 0) {
-                    Color newColor = reader.getColor(x - 1, y);
-                    writer.setColor(x, y, newColor);
-                }
-                else if (y == IMAGE_HEIGHT && x != 0){
-                    Color newColor = reader.getColor(x - 1, y - 2);
-                    writer.setColor(x, y, newColor);
-                }
-                else {
-                    System.out.println(x + ", " + y);
-                    Color newColor = reader.getColor(x - 1, y - 1);
-                    writer.setColor(x, y, newColor);
+                    // if just general border, get neighbor color
+                    //TODO add border padding, then test by grabbing pixel values
                 }
             }
         }
