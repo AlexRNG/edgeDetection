@@ -8,6 +8,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
+import javax.swing.*;
+
 public class Main extends Application{
 
     /** path to image file */
@@ -53,15 +55,32 @@ public class Main extends Application{
         Image paddedVersion = addPadding(originalImage);
         ImageView padView = new ImageView(paddedVersion);
 
+        Image smallTestImage = blankSmallImage();
+        ImageView testImage = new ImageView(smallTestImage);
+        ImageView padTest = new ImageView(addPadding(smallTestImage));
+
         // scale image view to fit on window
         view.setFitWidth(IMAGE_VIEW_WIDTH);
         view.setFitHeight(IMAGE_VIEW_WIDTH);
-
         view.setPreserveRatio(true);
+
+        testImage.setFitHeight(100);
+        testImage.setPreserveRatio(true);
+        testImage.setSmooth(false);
+
+        padTest.setFitHeight(100);
+        padTest.setPreserveRatio(true);
+        padTest.setSmooth(false);
 
         // same for padded version
         padView.setFitWidth(IMAGE_VIEW_WIDTH + 100);
         padView.setFitHeight(IMAGE_VIEW_WIDTH + 100);
+
+        PixelReader reader = paddedVersion.getPixelReader();
+        Color pixelMaxMax = reader.getColor(IMAGE_WIDTH, IMAGE_HEIGHT);
+        Color pixelMaxMaxLess = reader.getColor(IMAGE_WIDTH - 1, IMAGE_HEIGHT - 1);
+
+        System.out.println("same ? " + pixelMaxMaxLess.equals(pixelMaxMax));
 
         // create matrix/list object for the filter
         //      maybe constants to choose from
@@ -70,7 +89,10 @@ public class Main extends Application{
         GridPane root = new GridPane();
 
         root.add(view, 0, 0);
-        root.add(padView, 1, 0);
+        root.add(padView, 0, 1);
+
+        root.add(testImage, 1, 0);
+        root.add(padTest, 1, 1);
 
         Scene scene = new Scene(root, 800, 840);
         stage.setScene(scene);
@@ -87,83 +109,116 @@ public class Main extends Application{
      */
     public Image addPadding(Image image) {
 
+        double width = image.getWidth();
+        double height = image.getHeight();
+
         // create blank Writable image and get instance to writer
-        WritableImage paddedImage = new WritableImage(IMAGE_WIDTH + 1, IMAGE_HEIGHT + 1);
+        WritableImage paddedImage = new WritableImage((int) width + 2, (int) height + 2);
         PixelWriter writer = paddedImage.getPixelWriter();
+
+        double newWidth = paddedImage.getWidth();
+        double newHeight = paddedImage.getHeight();
+
+        System.out.println("old width = " + width + " - new width = " + newWidth);
+        System.out.println("old height = " + height + " - new height = " + newHeight);
 
         // create reader for passed image
         PixelReader reader = image.getPixelReader();
 
-        // iterate over all pixels
-        for (int y = 0; y < IMAGE_HEIGHT + 1; ++y) {
-            for (int x = 0; x < IMAGE_WIDTH + 1; ++x) {
+        for (int y = 0; y < paddedImage.getHeight(); ++y) {
+            for (int x = 0; x < paddedImage.getWidth(); ++x) {
 
-                // booleans for determining if pixel is on border
-                boolean isInXBorder = x == 0 || x == IMAGE_WIDTH;
-                boolean isInYBorder = y == 0 || y == IMAGE_HEIGHT;
+                boolean isInTopLeft = (x == 0 && (y == 0 || y == 1)) ||
+                        (x == 1 && y == 0);
+                boolean isInBotLeft = (x == newWidth - 2 &&
+                        (y == 0 || y == 1)) ||
+                        (x == newWidth - 2 && y == 0);
+                boolean isInTopRight = (x == 0 &&
+                            (y == newHeight - 2  || y == newHeight - 1)) ||
+                        (x == 1 && y == newHeight - 1);
+                boolean isInBotRight = (x == newWidth - 1 &&
+                            (y == newHeight - 1 || y == newHeight - 2)) ||
+                        (x == newWidth - 2 && y == newHeight - 1);
 
-                // booleans determining if pixel is in one of the corners
-                boolean is00Corner = x == 0 && y == 0;
-                boolean is01Corner = x == 0 && y == IMAGE_HEIGHT;
-                boolean is10Corner = x == IMAGE_WIDTH && y == IMAGE_HEIGHT;
-                boolean is11Corner = x ==IMAGE_WIDTH && y == 0;
+                boolean isInXBorder = x == 0 || x == newWidth - 1;
+                boolean isInYBorder = y == 0 || y == newHeight - 1;
 
-                // casting these booleans to string in sequence
-                String cornerResult = is00Corner + "-" + is01Corner
-                        + "-" + is10Corner + "-" + is11Corner;
+                if (isInTopLeft) {
+                    Color color = reader.getColor(0, 0);
 
-                // check if pixel is in the border
-                if (isInXBorder || isInYBorder) {
+                    writer.setColor(0, 0, color);
+                    writer.setColor(0, 1, color);
+                    writer.setColor(1, 0, color);
 
-                    /* check if this pixel in a corner, if so which one
-                     * and color with the same color as it's diagonal
-                     */
-                    Color newColor = null;
-                    switch (cornerResult) {
-                        case "true-false-false-false":
-                            newColor = reader.getColor(x, y);
-                            writer.setColor(x, y, newColor);
-                            break;
-                        case "false-true-false-false":
-                            newColor = reader.getColor(x, y - 1);
-                            writer.setColor(x, y, newColor);
-                            break;
-                        case "false-false-true-false":
-                            newColor = reader.getColor(x - 1, y - 1);
-                            writer.setColor(x, y, newColor);
-                            break;
-                        case "false-false-false-true":
-                            newColor = reader.getColor(x - 1, y);
-                            writer.setColor(x, y, newColor);
-                            break;
-                        default:
+                } else if (isInBotLeft) {
+                    Color color = reader.getColor(0, (int) height - 1);
 
-                            // if its not a corner its a border
-                            if (x == 0) {
-                                newColor = reader.getColor(x, y - 1);
-                                writer.setColor(x, y, newColor);
-                            }
-                            else if (x == IMAGE_WIDTH) {
-                                newColor = reader.getColor(x - 2, y - 1);
-                                writer.setColor(x, y, newColor);
-                            }
-                            else if (y == 0) {
-                                newColor = reader.getColor(x - 1, y);
-                                writer.setColor(x, y, newColor);
-                            }
-                            else {
-                                newColor = reader.getColor(x - 1, y - 2);
-                                writer.setColor(x, y, newColor);
-                            }
+                    writer.setColor(0, (int) newHeight - 1, color);
+                    writer.setColor(0, (int) newHeight - 2, color);
+                    writer.setColor(1, (int) newHeight - 1, color);
+                } else if (isInBotRight) {
+                    Color color = reader.getColor((int) width - 1, (int) height - 1);
+
+                    writer.setColor((int) newWidth - 1, (int) newHeight - 1, color);
+                    writer.setColor((int) newWidth - 1, (int) newHeight - 2, color);
+                    writer.setColor((int) newWidth - 2, (int) newHeight - 1, color);
+                } else if (isInTopRight) {
+                    Color color = reader.getColor((int) width - 1, 0);
+
+                    writer.setColor((int) newWidth - 1, 0, color);
+                    writer.setColor((int) newWidth - 1, 1, color);
+                    writer.setColor((int) newWidth - 2, 0, color);
+                }
+                if (!isInXBorder && !isInYBorder) {
+
+                    if (x == 10 && y == 1) {
+                        System.out.println("bruh");
                     }
-                // otherwise just copy the corresponding pixel
-                } else {
-                    Color newColor = reader.getColor(x - 1, y - 1);
-                    writer.setColor(x, y, newColor);
+                    Color color = reader.getColor(x - 1, y - 1);
+
+                    writer.setColor(x, y, color);
                 }
             }
         }
+        // writing top and bottom border
+        for (int x = 2; x < paddedImage.getWidth() - 2; ++x) {
+            Color color = reader.getColor(x - 1, 0);
+            Color color2 = reader.getColor(x - 1, (int) height - 1);
+
+            writer.setColor(x, 0, color);
+            writer.setColor(x, (int) newHeight - 1, color2);
+        }
+
+        // writing left and right border
+        for (int y = 2; y < paddedImage.getHeight() - 2; ++y) {
+            Color color = reader.getColor(0, y - 1);
+            Color color2 = reader.getColor((int) width - 1, y - 1);
+
+            writer.setColor(0, y, color);
+            writer.setColor((int) newWidth - 1, y, color2);
+        }
+
 
         return paddedImage;
+    }
+
+    /**
+     * This method is responsible for creating a small image of 10x10 pixels
+     * with the same color, used to test if the padding
+     * @return a 10 x 10 image with
+     */
+    public Image blankSmallImage() {
+        WritableImage smallImage = new WritableImage(10, 10);
+        PixelWriter writer = smallImage.getPixelWriter();
+        for (int y = 0; y < 10; ++y) {
+            for (int x = 0; x < 10; ++x) {
+                if (x % 2 == 1 && y % 2 == 1) {
+                    writer.setColor(x, y, Color.YELLOW);
+                } else {
+                    writer.setColor(x, y, Color.BLACK);
+                }
+            }
+        }
+        return smallImage;
     }
 }
