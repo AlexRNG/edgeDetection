@@ -34,6 +34,7 @@ public class Main extends Application{
     @Override
     public void start(Stage stage) throws Exception {
 
+        // read image file
         File file;
         try {
             // read image
@@ -75,15 +76,20 @@ public class Main extends Application{
         // same for padded version
         padView.setFitWidth(IMAGE_VIEW_WIDTH + 100);
         padView.setFitHeight(IMAGE_VIEW_WIDTH + 100);
-
-        PixelReader reader = paddedVersion.getPixelReader();
-        Color pixelMaxMax = reader.getColor(IMAGE_WIDTH, IMAGE_HEIGHT);
-        Color pixelMaxMaxLess = reader.getColor(IMAGE_WIDTH - 1, IMAGE_HEIGHT - 1);
-
-        System.out.println("same ? " + pixelMaxMaxLess.equals(pixelMaxMax));
+        padView.setPreserveRatio(true);
 
         // create matrix/list object for the filter
-        //      maybe constants to choose from
+
+        int[][] verticalKernelFilter = new int[][]{new int[]{-1, 0, 1},
+                                                    new int[]{-2, 0, 2},
+                                                    new int[]{-1, 0, 1}};
+
+        int[][] horizontalKernelFilter = new int[][]{new int[]{-1, -2, -1},
+                new int[]{-0, 0, 0},
+                new int[]{1, 2, 1}};
+
+        // create 2d array to store intermediate cross correlation values
+        int[][] crossCorrelationValues = new int[IMAGE_HEIGHT][IMAGE_WIDTH];
 
         // setup grid object to put image onto
         GridPane root = new GridPane();
@@ -169,11 +175,8 @@ public class Main extends Application{
                     writer.setColor((int) newWidth - 1, 1, color);
                     writer.setColor((int) newWidth - 2, 0, color);
                 }
+                // fill in middle of image
                 if (!isInXBorder && !isInYBorder) {
-
-                    if (x == 10 && y == 1) {
-                        System.out.println("bruh");
-                    }
                     Color color = reader.getColor(x - 1, y - 1);
 
                     writer.setColor(x, y, color);
@@ -204,7 +207,7 @@ public class Main extends Application{
 
     /**
      * This method is responsible for creating a small image of 10x10 pixels
-     * with the same color, used to test if the padding
+     * with alternating colors, used to test if the padding
      * @return a 10 x 10 image with
      */
     public Image blankSmallImage() {
