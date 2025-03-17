@@ -60,6 +60,7 @@ public class Main extends Application{
         ImageView testImage = new ImageView(smallTestImage);
         ImageView padTest = new ImageView(addPadding(smallTestImage));
 
+
         // scale image view to fit on window
         view.setFitWidth(IMAGE_VIEW_WIDTH);
         view.setFitHeight(IMAGE_VIEW_WIDTH);
@@ -87,6 +88,7 @@ public class Main extends Application{
         int[][] horizontalKernelFilter = new int[][]{new int[]{-1, -2, -1},
                 new int[]{-0, 0, 0},
                 new int[]{1, 2, 1}};
+        crossCorrelationMapping(paddedVersion, verticalKernelFilter);
 
         // create 2d array to store intermediate cross correlation values
         int[][] crossCorrelationValues = new int[IMAGE_HEIGHT][IMAGE_WIDTH];
@@ -124,9 +126,6 @@ public class Main extends Application{
 
         double newWidth = paddedImage.getWidth();
         double newHeight = paddedImage.getHeight();
-
-        System.out.println("old width = " + width + " - new width = " + newWidth);
-        System.out.println("old height = " + height + " - new height = " + newHeight);
 
         // create reader for passed image
         PixelReader reader = image.getPixelReader();
@@ -223,5 +222,34 @@ public class Main extends Application{
             }
         }
         return smallImage;
+    }
+
+
+    /**
+     * This method will iterate over every pixel in the image and apply the kernel
+     * filter to gain values
+     * @param image the image object to apply kernel filter to
+     * @return 2-d int array with cross correlation values, dependant on filter
+     */
+    public int[][] crossCorrelationMapping(Image image, int[][] kernelFilter) {
+        double height = image.getHeight() - 1;
+        double width = image.getWidth() - 1;
+
+        int[][] values = new int[(int) height - 1][(int) width - 1];
+
+        int xIndex = 0;
+        int yIndex = 0;
+
+        for (int y = 1; y < height; ++y) {
+            for (int x = 1; x < width; ++x) {
+
+                // apply kernel values at 3x3 pixels, centered on pixel at xIndex, yIndex
+            }
+        }
+        System.out.println("height: " + image.getHeight() + " width: " + image.getWidth());
+
+
+
+        return new int[2][2];
     }
 }
